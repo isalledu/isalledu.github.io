@@ -1,0 +1,141 @@
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Recognition App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded shadow-md w-full max-w-lg">
+        <h1 class="text-2xl font-bold mb-4">Speech Recognition App</h1>
+        <p id="kalimat" class="mb-4">Kalimat akan muncul di sini</p>
+        <button id="mulai" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Mulai</button>
+        <button id="berhenti" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 ml-2">Berhenti</button>
+        <p id="hasil" class="mt-4">Hasil akan muncul di sini</p>
+    </div>
+
+    <script>
+        const kalimatElement = document.getElementById('kalimat');
+        const hasilElement = document.getElementById('hasil');
+        const mulaiButton = document.getElementById('mulai');
+        const berhentiButton = document.getElementById('berhenti');
+
+        const kalimat = [
+            
+            "instansi",
+            "konstanta",
+            "kontraksi",
+            "kontribusi",
+            "kontribusi",
+            "eksperimen",
+            "interpretasi",
+            "institusi",
+            "konstruksi",
+            "transportasi",
+            "eksistensi",
+            "komprehensif",
+            "transformasi",
+            "eksplorasi",
+            "instruksi ",
+            "infrastruktur ",
+            "perspektif ",
+            "improvisasi ",
+            "transparansi ",
+            "konstitusional"
+          
+        ];
+
+        let indexKalimat = 0;
+        let recognition;
+        let totalCorrectWords = 0;
+        let totalIncorrectWords = 0;
+
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'id-ID';
+
+            recognition.onstart = () => {
+                mulaiButton.disabled = true;
+                berhentiButton.disabled = false;
+                kalimatElement.textContent = kalimat[indexKalimat];
+            };
+
+            recognition.onresult = (event) => {
+                const hasil = event.results[0][0].transcript;
+                const { correct, incorrect } = calculateScore(kalimat[indexKalimat].toLowerCase(), hasil.toLowerCase());
+                totalCorrectWords += correct;
+                totalIncorrectWords += incorrect;
+
+                hasilElement.textContent = `Anda membaca: "${hasil}". Skor: ${correct * 100 / (correct + incorrect) || 0}%`;
+
+                indexKalimat++;
+                if (indexKalimat < kalimat.length) {
+                    kalimatElement.textContent = kalimat[indexKalimat];
+                    recognition.start();
+                } else {
+                    hasilElement.textContent += ` Selesai! Total Benar: ${totalCorrectWords}, Total Salah: ${totalIncorrectWords}`;
+                    mulaiButton.disabled = false;
+                    berhentiButton.disabled = true;
+                    indexKalimat = 0;
+                    totalCorrectWords = 0;
+                    totalIncorrectWords = 0;
+                }
+            };
+
+            recognition.onerror = (event) => {
+                hasilElement.textContent = `Error: ${event.error}`;
+                mulaiButton.disabled = false;
+                berhentiButton.disabled = true;
+            };
+
+            recognition.onend = () => {
+                if (indexKalimat < kalimat.length) {
+                    recognition.start();
+                }
+            };
+        } else {
+            hasilElement.textContent = "Browser Anda tidak mendukung Web Speech API";
+        }
+
+        mulaiButton.addEventListener('click', () => {
+            recognition.start();
+        });
+
+        berhentiButton.addEventListener('click', () => {
+            recognition.stop();
+            mulaiButton.disabled = false;
+            berhentiButton.disabled = true;
+        });
+
+        function calculateScore(target, spoken) {
+            const targetWords = target.split(" ");
+            const spokenWords = spoken.split(" ");
+            let correctWords = 0;
+            let incorrectWords = 0;
+
+            for (let i = 0; i < targetWords.length; i++) {
+                if (i < spokenWords.length && targetWords[i] === spokenWords[i]) {
+                    correctWords++;
+                } else {
+                    incorrectWords++;
+                }
+            }
+
+            if (spokenWords.length < targetWords.length) {
+                incorrectWords += (targetWords.length - spokenWords.length);
+            }
+
+            return { correct: correctWords, incorrect: incorrectWords };
+        }
+    </script>
+</body>
+</html>
